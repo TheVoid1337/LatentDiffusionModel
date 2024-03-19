@@ -1,24 +1,21 @@
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from model.diffusion_model.latent_diffusion_model import LatentDiffusionModel
-from training import train_model
-from diffusers.schedulers import DDPMScheduler
+
+from model.unet.unet import UNet
+from training.diffusion import train_diffusion_model
 
 if __name__ == '__main__':
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Resize(64),
+        transforms.Resize(32),
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    fashion_mnist = datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform)
+    fashion_mnist = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
 
-    train_loader = DataLoader(fashion_mnist, batch_size=1, shuffle=True, num_workers=2)
+    train_loader = DataLoader(fashion_mnist, batch_size=64, shuffle=True, num_workers=2, pin_memory=True)
 
-    model = LatentDiffusionModel(1, 1, 100, [16],
-                                 [16], [16, 32, 64, 128])
+    unet = UNet(in_channels=1, out_channels=1, hidden_channels=[8, 16, 32, 64])
 
-    scheduler = DDPMScheduler(num_train_timesteps=1000)
-
-    train_model(scheduler, model, 10, train_loader, "weights/diffusion_model.pth")
+    train_diffusion_model(unet, train_loader)
